@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/nafisziangirov/**)",
+      "Read(//Users/nafisziangirov/.nvm/versions/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} -> %{redirect_url}\\\\n\" http://localhost:3210/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3210/login)"
+    ]
+  }
+}

@@ -8,9 +8,26 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-onest)", "system-ui", "sans-serif"],
+      },
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        accent: "#2A6FDB",
+        "accent-dark": "#1E4FA0",
+        bg: "#F5F1EA",
+        card: "#FFFFFF",
+        border: "#E7DFD2",
+        ink: "#23201B",
+        muted: "#8A8175",
+        sand: "#FBF4E3",
+        "sand-dark": "#F6EDD9",
+        money: "#8A6A2A",
+        ok: "#1C7A4E",
+        "ok-bg": "#E4F3EA",
+        warn: "#B5791A",
+        "warn-bg": "#FBF1DA",
+        risk: "#C0463A",
+        "risk-bg": "#FBE7E3",
       },
     },
   },
