@@ -54,7 +54,7 @@ function VatBadge({ entity }: { entity?: Entity }) {
         usn ? "bg-[#EFE9DE] text-muted" : "bg-[#EAF1FC] text-accent-dark"
       }`}
     >
-      {usn ? "Без НДС" : "НДС 20%"}
+      {usn ? "Без НДС" : "НДС 22%"}
     </span>
   );
 }

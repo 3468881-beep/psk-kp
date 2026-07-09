@@ -21,6 +21,9 @@ UPDATE entities SET
   requisites = 'р/с 40802810620000387808, ООО «Банк Точка», БИК 044525104'
 WHERE code = 'ip';
 
+-- Ставка НДС для ОСН — 22%.
+UPDATE entities SET vat_rate = 22 WHERE tax_mode = 'osn';
+
 -- 2. Таблица для хранения ссылок на PDF.
 -- unique(quote_id, kind) нужен для upsert(..., { onConflict: 'quote_id,kind' }).
 CREATE TABLE IF NOT EXISTS generated_pdfs (

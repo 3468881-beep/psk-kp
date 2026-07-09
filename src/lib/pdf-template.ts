@@ -1,5 +1,8 @@
 import { LOGO_PSK, STAMP_PSK, SIGN_TEHNO, SIGN_ATA } from "./pdf-assets";
 
+// Диагностика: убеждаемся, что base64-ассеты действительно вшиты в бандл.
+console.log("LOGO_PSK length:", LOGO_PSK?.length);
+
 export interface KpData {
   entityCode: "ip" | "tehnoprodukt" | "ata";
   entityName: string;
@@ -70,11 +73,14 @@ function buildTable(items: KpData["items"]): string {
   </table>`;
 }
 
-function totalAndVat(items: KpData["items"], taxMode: string, vatRate: number) {
+// Ставка НДС для ОСН — 22%.
+const VAT_RATE = 22;
+
+function totalAndVat(items: KpData["items"], taxMode: string) {
   const total = items.reduce((s, i) => s + (i.price ?? 0) * (i.qty ?? 1), 0);
   const vatLine =
     taxMode === "osn"
-      ? `В т.ч. НДС ${vatRate}%: ${fmt((total * vatRate) / (100 + vatRate))} ₽`
+      ? `В т.ч. НДС ${VAT_RATE}%: ${fmt((total * VAT_RATE) / (100 + VAT_RATE))} ₽`
       : "НДС не облагается (применяется УСН)";
   return { total, vatLine };
 }
@@ -83,9 +89,10 @@ function totalAndVat(items: KpData["items"], taxMode: string, vatRate: number) {
 // Шрифт Cambria, тёмно-синий заголовок #003366, логотип PSK в шапке-таблице,
 // вводный текст, две колонки условий внизу, подпись + печать.
 export function buildPskHtml(d: KpData): string {
-  const { total, vatLine } = totalAndVat(d.items, d.taxMode, d.vatRate);
-  const showLogo = d.showLogo !== false;
-  const showStamp = d.showStamp !== false;
+  const { total, vatLine } = totalAndVat(d.items, d.taxMode);
+  // Пока показываем логотип и печать всегда, независимо от тумблеров.
+  const showLogo = true;
+  const showStamp = true;
   return `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -184,8 +191,8 @@ ${buildTable(d.items)}
 // Шрифт Times New Roman, заголовок-название компании, центрированный подзаголовок,
 // минималистичная таблица, подпись+печать директора внизу.
 export function buildTehnoproduktHtml(d: KpData): string {
-  const { total, vatLine } = totalAndVat(d.items, d.taxMode, d.vatRate);
-  const showStamp = d.showStamp !== false;
+  const { total, vatLine } = totalAndVat(d.items, d.taxMode);
+  const showStamp = true;
   return `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -237,8 +244,8 @@ ${showStamp ? `<div class="sign"><img src="${SIGN_TEHNO}" alt=""></div>` : ""}
 // Шрифт Helvetica Neue, тёмно-серый #1A1A1A, центрированный заголовок сверху,
 // реквизиты компании обычным текстом, минимализм, подпись+печать внизу.
 export function buildAtaHtml(d: KpData): string {
-  const { total, vatLine } = totalAndVat(d.items, d.taxMode, d.vatRate);
-  const showStamp = d.showStamp !== false;
+  const { total, vatLine } = totalAndVat(d.items, d.taxMode);
+  const showStamp = true;
   return `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }

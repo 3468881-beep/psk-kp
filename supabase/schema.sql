@@ -23,12 +23,12 @@ insert into entities values
    'psk'),
   ('tehnoprodukt',  'ООО «Технопродукт»',     null,
    null,            null,  null,
-   'osn', 20,
+   'osn', 22,
    null,   -- реквизиты уточнить у заказчика
    'alt1'),
   ('ata',           'ООО «АТА»',              null,
    null,            '507401001', null,
-   'osn', 20,
+   'osn', 22,
    null,   -- реквизиты уточнить у заказчика
    'alt2');
 

@@ -25,7 +25,7 @@ export const SEED_ENTITIES: Entity[] = [
     kpp: "027501001",
     ogrn: "1180280026563",
     tax_mode: "osn",
-    vat_rate: 20,
+    vat_rate: 22,
     requisites:
       "450077, РФ, Респ. Башкортостан, г. Уфа, ул. Коммунистическая, д.45/3 пом. 209",
     is_default_for: "alt1",
@@ -38,7 +38,7 @@ export const SEED_ENTITIES: Entity[] = [
     kpp: "507401001",
     ogrn: null,
     tax_mode: "osn",
-    vat_rate: 20,
+    vat_rate: 22,
     requisites:
       "142117, Московская область, г. Подольск, Парковая ул., д. 54, офис 11-1. р/с 40702810940000085470, ПАО СБЕРБАНК, к/с 30101810600000000225, БИК 044525225",
     is_default_for: "alt2",
