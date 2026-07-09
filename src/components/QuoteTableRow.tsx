@@ -19,19 +19,13 @@ export function QuoteTableRow({ index, row, calc, onField, onDelete }: Props) {
     <tr className="border-b border-[#F1ECE3]">
       <td className="px-2 py-1.5 text-[12px] text-[#A89F90]">{index}</td>
 
-      {/* Наименование + категория */}
+      {/* Наименование */}
       <td className="px-2 py-1.5">
         <input
           className="cellinput font-semibold"
           value={row.name}
           onChange={set("name")}
           placeholder="Наименование позиции"
-        />
-        <input
-          className="cellinput mt-0.5 text-[10px] text-muted"
-          value={row.category}
-          onChange={set("category")}
-          placeholder="Категория"
         />
       </td>
 
