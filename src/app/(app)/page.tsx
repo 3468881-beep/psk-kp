@@ -4,7 +4,9 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuoteTable } from "@/components/QuoteTable";
 import { QuoteSidebar } from "@/components/QuoteSidebar";
+import { PdfModal, type DemoPayload } from "@/components/PdfModal";
 import { useToast } from "@/components/ui/Toast";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
   calcRow,
   calcTotals,
@@ -65,6 +67,7 @@ function CalcScreen() {
 
   const [quoteId, setQuoteId] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   // Load юрлица once.
   useEffect(() => {
@@ -246,6 +249,42 @@ function CalcScreen() {
 
   const checkedSuppliers = rows.filter((r) => r.supplier_name).length;
 
+  function onPdf() {
+    if (!quoteId) {
+      toast("Сначала сохраните расчёт", "error");
+      return;
+    }
+    setShowPdfModal(true);
+  }
+
+  // In demo mode (no server-side Supabase) the client ships the data itself.
+  function buildDemoPayload(): DemoPayload {
+    const items = rows.map((r, i) => {
+      const c = calcRow(r, kp2, kp3);
+      return {
+        position: i + 1,
+        name: r.name,
+        unit: r.unit,
+        qty: num(r.qty),
+        price_psk: c.pricePsk,
+        price_alt1: c.priceAlt1,
+        price_alt2: c.priceAlt2,
+      };
+    });
+    return {
+      quote: {
+        kp_no: kpNo,
+        customer,
+        kp_date: kpDate,
+        entity_psk: entityPsk,
+        entity_alt1: entityAlt1,
+        entity_alt2: entityAlt2,
+      },
+      items,
+      entities,
+    };
+  }
+
   return (
     <div className="flex min-h-0 flex-1 bg-bg">
       {/* Left: table */}
@@ -297,10 +336,19 @@ function CalcScreen() {
         optLogo={optLogo}
         onToggle={onToggle}
         saving={saving}
+        canPdf={!!quoteId}
         onSave={onSave}
         onNew={onNew}
-        onPdf={() => toast("Генерация PDF появится в Шаге 2")}
+        onPdf={onPdf}
       />
+
+      {showPdfModal && quoteId && (
+        <PdfModal
+          quoteId={quoteId}
+          demoPayload={isSupabaseConfigured ? undefined : buildDemoPayload()}
+          onClose={() => setShowPdfModal(false)}
+        />
+      )}
     </div>
   );
 }

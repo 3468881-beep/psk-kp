@@ -36,6 +36,7 @@ interface Props {
   onToggle: (opt: PdfOpt) => void;
 
   saving: boolean;
+  canPdf: boolean;
   onSave: () => void;
   onNew: () => void;
   onPdf: () => void;
@@ -266,10 +267,17 @@ export function QuoteSidebar(p: Props) {
         </button>
         <button
           onClick={p.onPdf}
-          className="rounded-[10px] border border-border bg-white px-4 py-2.5 text-[12.5px] font-semibold text-[#6F685D] transition-colors hover:bg-[#FBFAF7]"
+          disabled={!p.canPdf}
+          title={p.canPdf ? undefined : "Сначала сохраните расчёт"}
+          className="rounded-[10px] border border-border bg-white px-4 py-2.5 text-[12.5px] font-semibold text-[#6F685D] transition-colors hover:bg-[#FBFAF7] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
         >
-          Генерировать PDF →
+          📄 Сформировать 3 PDF
         </button>
+        {!p.canPdf && (
+          <div className="-mt-1 text-center text-[10.5px] text-[#A89F90]">
+            Кнопка активна после сохранения расчёта
+          </div>
+        )}
         <button
           onClick={p.onNew}
           className="rounded-[10px] border border-border bg-white px-4 py-2 text-[11.5px] font-semibold text-[#6F685D] transition-colors hover:bg-[#FBFAF7]"
