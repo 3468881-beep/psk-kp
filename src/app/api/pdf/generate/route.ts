@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
 
+  // Diagnostics for the "empty item name" bug — inspect the real row shape.
+  console.log("PDF generate — items[0]:", JSON.stringify(items[0]));
+
   const entitiesMap: Record<string, EntityRow> = Object.fromEntries(
     entities.map((e) => [e.code, e]),
   );
@@ -84,7 +87,9 @@ export async function POST(req: NextRequest) {
 
       const kpItems = items.map((i) => ({
         position: i.position,
-        name: i.name ?? "",
+        // quote_items stores the name in `name`; fall back to other likely keys
+        // so a differently-shaped payload still renders a title.
+        name: i.name ?? i.наименование ?? i.product_name ?? i.title ?? "",
         unit: i.unit ?? "шт",
         qty: Number(i.qty ?? 1),
         price: Number(i[v.priceField] ?? 0),
@@ -105,6 +110,8 @@ export async function POST(req: NextRequest) {
         kpDate: quote.kp_date
           ? new Date(quote.kp_date).toLocaleDateString("ru-RU")
           : new Date().toLocaleDateString("ru-RU"),
+        showLogo: !!quote.opt_logo,
+        showStamp: !!(quote.opt_pechat || quote.opt_podpis),
         items: kpItems,
       };
 
