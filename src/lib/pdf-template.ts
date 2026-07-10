@@ -100,8 +100,8 @@ body { font-family: Cambria, Georgia, "Times New Roman", serif; font-size:11pt; 
        padding:12mm 15mm; }
 .header-table { width:100%; border-collapse:collapse; margin-bottom:6mm; }
 .header-table td { vertical-align:middle; padding:0 4mm; }
-.logo-cell { width:150px; text-align:center; }
-.logo-cell img { height:65px; width:auto; }
+.logo-cell { width:180px; text-align:center; }
+.logo-cell img { height:90px; width:auto; }
 .req-cell { font-size:10pt; line-height:1.6; padding-left:6mm; border-left:1px solid #ccc; }
 .req-name { font-size:12pt; font-weight:bold; margin-bottom:2mm; }
 h1 { text-align:center; font-size:24pt; font-weight:bold; color:#003366;
@@ -125,12 +125,12 @@ tbody tr:nth-child(even) td { background:#eef2f8; }
 .footer-title { font-weight:bold; font-size:14pt; margin-bottom:2mm; display:block; }
 .sign { margin-top:7mm; font-size:11pt; line-height:1.7; position:relative; }
 .sign strong { display:block; font-weight:bold; margin-bottom:1mm; }
-.stamp { position:absolute; top:-6mm; left:50mm; }
-.stamp img { height:110px; width:auto; }
+.stamp { position:absolute; top:-10mm; left:45mm; }
+.stamp img { height:150px; width:auto; }
 </style></head><body>
 
 <table class="header-table"><tr>
-  <td class="logo-cell">${showLogo ? `<img src="${LOGO_PSK}" alt="PSK" style="height: 65px; width: auto;">` : ""}</td>
+  <td class="logo-cell">${showLogo ? `<img src="${LOGO_PSK}" alt="PSK" style="height: 90px; width: auto;">` : ""}</td>
   <td class="req-cell">
     <div class="req-name">Индивидуальный предприниматель Зиянгиров Нафис Назихович</div>
     ИНН 026813389549 / ОГРНИП 324028000158894<br>
@@ -181,7 +181,7 @@ ${buildTable(d.items)}
   ИП Зиянгиров Нафис Назихович<br>
   +7 (993) 046-82-81<br>
   znafis@yandex.ru
-  ${showStamp ? `<span class="stamp"><img src="${STAMP_PSK}" alt="" style="height: 110px; width: auto;"></span>` : ""}
+  ${showStamp ? `<span class="stamp"><img src="${STAMP_PSK}" alt="" style="height: 150px; width: auto;"></span>` : ""}
 </div>
 
 </body></html>`;
