@@ -4,7 +4,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createHash } from "crypto";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+// maxDuration не задаём: на Vercel Hobby повышенный лимит недоступен,
+// укладываемся в дефолтный тайм-аут за счёт параллельного Firecrawl с таймаутами.
 
 interface Source {
   site: string;
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       query: `купить "${itemName}" цена рублей`,
       search_depth: "basic",
-      max_results: 5,
+      max_results: 3,
       exclude_domains: ["avito.ru", "youla.ru"],
     }),
   });
@@ -102,15 +103,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Парсинг цен через Firecrawl
+  // Парсинг цен через Firecrawl — максимум 2 страницы, параллельно,
+  // с таймаутом 5 сек на каждый запрос и общим ограничением 20 сек.
   const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-  const sources: Source[] = [];
+  let sources: Source[] = [];
 
-  for (const result of searchResults.slice(0, 5)) {
-    if (!firecrawlKey) break;
+  async function scrapeOne(result: {
+    url: string;
+    title?: string;
+  }): Promise<Source | null> {
+    if (!firecrawlKey) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     try {
       const fcRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${firecrawlKey}`,
@@ -134,16 +142,35 @@ export async function POST(req: NextRequest) {
       const fcData = await fcRes.json();
       const extracted = fcData.data?.extract;
       if (extracted?.price && extracted.price > 0) {
-        sources.push({
+        return {
           site: new URL(result.url).hostname.replace("www.", ""),
           url: result.url,
           price: extracted.price,
           title: extracted.title ?? result.title ?? itemName,
-        });
+        };
       }
+      return null;
     } catch (e) {
+      // таймаут (abort) или ошибка сети — пропускаем эту страницу
       console.error("Firecrawl error for", result.url, e);
+      return null;
+    } finally {
+      clearTimeout(timeout);
     }
+  }
+
+  if (firecrawlKey) {
+    const pages = searchResults.slice(0, 2);
+    const scrapeAll = Promise.allSettled(pages.map(scrapeOne)).then((results) =>
+      results
+        .map((r) => (r.status === "fulfilled" ? r.value : null))
+        .filter((s): s is Source => s !== null),
+    );
+    // Общий предохранитель: не ждём Firecrawl дольше 20 сек.
+    const overallTimeout = new Promise<Source[]>((resolve) =>
+      setTimeout(() => resolve([]), 20000),
+    );
+    sources = await Promise.race([scrapeAll, overallTimeout]);
   }
 
   // Fallback: цены из сниппетов Tavily
