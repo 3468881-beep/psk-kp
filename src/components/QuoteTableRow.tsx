@@ -29,31 +29,46 @@ export function QuoteTableRow({
   const set = (field: keyof RowState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onField(row.id, field, e.target.value);
 
-  const moveBtn =
-    "flex h-5 w-5 items-center justify-center text-[11px] leading-none text-[#A89F90] transition-colors hover:text-ink disabled:opacity-20 disabled:cursor-default disabled:hover:text-[#A89F90]";
-
   return (
     <tr className="border-b border-[#F1ECE3]">
-      {/* Перемещение позиции вверх/вниз */}
-      <td className="px-1 py-1.5">
-        <div className="flex flex-col items-center">
-          <button
-            onClick={onMoveUp}
-            disabled={isFirst}
-            title="Переместить вверх"
-            className={moveBtn}
-          >
-            ↑
-          </button>
-          <button
-            onClick={onMoveDown}
-            disabled={isLast}
-            title="Переместить вниз"
-            className={moveBtn}
-          >
-            ↓
-          </button>
-        </div>
+      {/* Перемещение позиции вверх/вниз (inline-стили — не зависят от Tailwind) */}
+      <td style={{ width: 40, padding: "0 4px", whiteSpace: "nowrap" }}>
+        <button
+          onClick={onMoveUp}
+          disabled={isFirst}
+          title="Переместить вверх"
+          style={{
+            display: "block",
+            background: "none",
+            border: "none",
+            cursor: isFirst ? "default" : "pointer",
+            opacity: isFirst ? 0.2 : 0.6,
+            fontSize: 14,
+            lineHeight: 1,
+            padding: "2px 4px",
+            color: "#23201B",
+          }}
+        >
+          ↑
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast}
+          title="Переместить вниз"
+          style={{
+            display: "block",
+            background: "none",
+            border: "none",
+            cursor: isLast ? "default" : "pointer",
+            opacity: isLast ? 0.2 : 0.6,
+            fontSize: 14,
+            lineHeight: 1,
+            padding: "2px 4px",
+            color: "#23201B",
+          }}
+        >
+          ↓
+        </button>
       </td>
 
       <td className="px-2 py-1.5 text-[12px] text-[#A89F90]">{index}</td>

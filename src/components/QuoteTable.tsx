@@ -35,7 +35,7 @@ export function QuoteTable({
       <table className="w-full min-w-[1120px] border-collapse">
         <thead>
           <tr className="bg-[#F3EEE4]">
-            <th className={`${th}`} />
+            <th className={`${th}`} style={{ width: 40 }} />
             <th className={`${th} text-left`}>№</th>
             <th className={`${th} min-w-[230px] text-left`}>Наименование</th>
             <th className={`${th} text-right`}>Кол</th>
