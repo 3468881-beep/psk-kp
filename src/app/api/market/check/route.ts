@@ -56,32 +56,50 @@ export async function POST(req: NextRequest) {
   }
 
   const tavilyKey = process.env.TAVILY_API_KEY;
+  console.log(
+    "TAVILY_API_KEY present:",
+    !!process.env.TAVILY_API_KEY,
+    "length:",
+    process.env.TAVILY_API_KEY?.length,
+  );
   if (!tavilyKey) {
     return NextResponse.json({ error: "TAVILY_API_KEY not set" }, { status: 500 });
   }
 
-  // Поиск через Tavily
+  // Поиск через Tavily. Ключ передаём только в заголовке Authorization
+  // (api_key в теле — устаревший способ и вызывает ошибку у новых ключей).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let searchResults: any[] = [];
+  const tavilyRes = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tavilyKey}`,
+    },
+    body: JSON.stringify({
+      query: `купить "${itemName}" цена рублей`,
+      search_depth: "basic",
+      max_results: 5,
+      exclude_domains: ["avito.ru", "youla.ru"],
+    }),
+  });
+  const tavilyText = await tavilyRes.text();
+  console.log("Tavily response:", tavilyText.slice(0, 200));
+  if (!tavilyRes.ok) {
+    return NextResponse.json(
+      { error: `Tavily error: ${tavilyRes.status} ${tavilyText.slice(0, 100)}` },
+      { status: 500 },
+    );
+  }
   try {
-    const tavilyRes = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tavilyKey}`,
-      },
-      body: JSON.stringify({
-        api_key: tavilyKey,
-        query: `купить "${itemName}" цена рублей`,
-        search_depth: "basic",
-        max_results: 5,
-        exclude_domains: ["avito.ru", "youla.ru"],
-      }),
-    });
-    const tavilyData = await tavilyRes.json();
+    const tavilyData = JSON.parse(tavilyText);
     searchResults = tavilyData.results ?? [];
   } catch (e) {
-    console.error("Tavily error:", e);
+    console.error("Tavily JSON parse error:", e);
+    return NextResponse.json(
+      { error: `Tavily returned non-JSON: ${tavilyText.slice(0, 100)}` },
+      { status: 500 },
+    );
   }
 
   // Парсинг цен через Firecrawl
