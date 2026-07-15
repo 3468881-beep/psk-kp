@@ -11,8 +11,8 @@ export const SEED_ENTITIES: Entity[] = [
     inn: "026813389549",
     kpp: null,
     ogrn: "324028000158894",
-    tax_mode: "usn",
-    vat_rate: 0,
+    tax_mode: "osn",
+    vat_rate: 5,
     requisites:
       "р/с 40802810620000387808, ООО «Банк Точка», БИК 044525104",
     is_default_for: "psk",

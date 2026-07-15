@@ -141,6 +141,24 @@ function CalcScreen() {
     });
   }, []);
 
+  const onMoveUp = useCallback((index: number) => {
+    setRows((prev) => {
+      if (index <= 0) return prev;
+      const next = [...prev];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return next;
+    });
+  }, []);
+
+  const onMoveDown = useCallback((index: number) => {
+    setRows((prev) => {
+      if (index >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+  }, []);
+
   function onCoeffChange(field: "coeff_psk" | "coeff_kp2" | "coeff_kp3", value: string) {
     if (field === "coeff_psk") setCoeffPsk(value);
     else if (field === "coeff_kp2") setCoeffKp2(value);
@@ -313,6 +331,8 @@ function CalcScreen() {
           onField={onField}
           onDelete={onDelete}
           onAddRow={onAddRow}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
         />
       </div>
 

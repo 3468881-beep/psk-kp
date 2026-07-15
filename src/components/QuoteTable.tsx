@@ -11,6 +11,8 @@ interface Props {
   onField: (id: string, field: keyof RowState, value: string) => void;
   onDelete: (id: string) => void;
   onAddRow: () => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
 }
 
 const th =
@@ -23,6 +25,8 @@ export function QuoteTable({
   onField,
   onDelete,
   onAddRow,
+  onMoveUp,
+  onMoveDown,
 }: Props) {
   const totals = calcTotals(rows, coeffKp2, coeffKp3);
 
@@ -31,6 +35,7 @@ export function QuoteTable({
       <table className="w-full min-w-[1120px] border-collapse">
         <thead>
           <tr className="bg-[#F3EEE4]">
+            <th className={`${th}`} />
             <th className={`${th} text-left`}>№</th>
             <th className={`${th} min-w-[230px] text-left`}>Наименование</th>
             <th className={`${th} text-right`}>Кол</th>
@@ -55,7 +60,7 @@ export function QuoteTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={14} className="px-4 py-14 text-center">
+              <td colSpan={15} className="px-4 py-14 text-center">
                 <div className="text-[14px] font-semibold text-ink">
                   Добавьте первую позицию
                 </div>
@@ -79,6 +84,10 @@ export function QuoteTable({
                 calc={calcRow(row, coeffKp2, coeffKp3)}
                 onField={onField}
                 onDelete={onDelete}
+                isFirst={i === 0}
+                isLast={i === rows.length - 1}
+                onMoveUp={() => onMoveUp(i)}
+                onMoveDown={() => onMoveDown(i)}
               />
             ))
           )}
@@ -87,7 +96,7 @@ export function QuoteTable({
         {rows.length > 0 && (
           <tfoot>
             <tr className="bg-[#F3EEE4]">
-              <td colSpan={4} className="px-2 py-2.5 text-[11.5px] font-semibold text-[#6F685D]">
+              <td colSpan={5} className="px-2 py-2.5 text-[11.5px] font-semibold text-[#6F685D]">
                 Итого
               </td>
               <td className="num bg-sand-dark px-1.5 py-2.5 text-right text-[12px] font-bold text-money">

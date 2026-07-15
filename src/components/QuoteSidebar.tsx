@@ -48,13 +48,14 @@ const sectionTitle =
 function VatBadge({ entity }: { entity?: Entity }) {
   if (!entity) return null;
   const usn = entity.tax_mode === "usn";
+  const label = usn ? "Без НДС" : `НДС ${entity.vat_rate ?? 22}%`;
   return (
     <span
       className={`ml-2 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
         usn ? "bg-[#EFE9DE] text-muted" : "bg-[#EAF1FC] text-accent-dark"
       }`}
     >
-      {usn ? "Без НДС" : "НДС 22%"}
+      {label}
     </span>
   );
 }

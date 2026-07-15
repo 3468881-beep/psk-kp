@@ -42,3 +42,6 @@ ALTER TABLE market_cache ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "team_all" ON market_cache;
 CREATE POLICY "team_all" ON market_cache
   FOR ALL USING (auth.role() = 'authenticated');
+
+-- ИП Зиянгиров теперь на УСН со ставкой НДС 5% (для бейджа НДС в интерфейсе).
+UPDATE entities SET tax_mode = 'osn', vat_rate = 5 WHERE code = 'ip';

@@ -89,7 +89,10 @@ function totalAndVat(items: KpData["items"], taxMode: string) {
 // Шрифт Cambria, тёмно-синий заголовок #003366, логотип PSK в шапке-таблице,
 // вводный текст, две колонки условий внизу, подпись + печать.
 export function buildPskHtml(d: KpData): string {
-  const { total, vatLine } = totalAndVat(d.items, d.taxMode);
+  const { total } = totalAndVat(d.items, d.taxMode);
+  // ИП Зиянгиров — УСН со ставкой НДС 5% (включён в цену: 5/105).
+  const vatAmount = (total * 5) / 105;
+  const vatLine = `В т.ч. НДС 5%: ${fmt(vatAmount)} ₽ (УСН)`;
   // Пока показываем логотип и печать всегда, независимо от тумблеров.
   const showLogo = true;
   const showStamp = true;

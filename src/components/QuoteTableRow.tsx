@@ -9,14 +9,53 @@ interface Props {
   calc: RowCalc;
   onField: (id: string, field: keyof RowState, value: string) => void;
   onDelete: (id: string) => void;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
-export function QuoteTableRow({ index, row, calc, onField, onDelete }: Props) {
+export function QuoteTableRow({
+  index,
+  row,
+  calc,
+  onField,
+  onDelete,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+}: Props) {
   const set = (field: keyof RowState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onField(row.id, field, e.target.value);
 
+  const moveBtn =
+    "flex h-5 w-5 items-center justify-center text-[11px] leading-none text-[#A89F90] transition-colors hover:text-ink disabled:opacity-20 disabled:cursor-default disabled:hover:text-[#A89F90]";
+
   return (
     <tr className="border-b border-[#F1ECE3]">
+      {/* Перемещение позиции вверх/вниз */}
+      <td className="px-1 py-1.5">
+        <div className="flex flex-col items-center">
+          <button
+            onClick={onMoveUp}
+            disabled={isFirst}
+            title="Переместить вверх"
+            className={moveBtn}
+          >
+            ↑
+          </button>
+          <button
+            onClick={onMoveDown}
+            disabled={isLast}
+            title="Переместить вниз"
+            className={moveBtn}
+          >
+            ↓
+          </button>
+        </div>
+      </td>
+
       <td className="px-2 py-1.5 text-[12px] text-[#A89F90]">{index}</td>
 
       {/* Наименование */}
