@@ -18,6 +18,9 @@ interface Supplier {
   reliability_score: number;
   verdict: string;
   checks: Record<string, string>;
+  arbitr_count?: number | null;
+  revenue?: number | null;
+  revenue_year?: number | null;
   fromCache?: boolean;
 }
 
@@ -127,6 +130,22 @@ export default function InnPage() {
                   ["КПП", supplier.kpp],
                   ["ОГРН", supplier.ogrn],
                   ["Руководитель", supplier.manager_name],
+                  [
+                    "Выручка",
+                    supplier.revenue != null
+                      ? `${supplier.revenue.toLocaleString("ru-RU")} ₽${
+                          supplier.revenue_year ? ` (${supplier.revenue_year})` : ""
+                        }`
+                      : "",
+                  ],
+                  [
+                    "Арбитражные дела",
+                    supplier.arbitr_count == null
+                      ? ""
+                      : supplier.arbitr_count > 0
+                        ? `${supplier.arbitr_count}`
+                        : "нет",
+                  ],
                   ["ОКВЭД", supplier.okved],
                   ["Зарегистрирована", supplier.registered_at],
                   ["Адрес", supplier.address],
@@ -144,14 +163,23 @@ export default function InnPage() {
             {/* Чеклист проверок */}
             <div className="text-[13px]">
               <div className="mb-2 font-semibold">Проверки:</div>
-              {Object.entries(supplier.checks).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="mb-1.5 rounded-[6px] border border-border bg-white px-3 py-2 text-ink"
-                >
-                  {value}
-                </div>
-              ))}
+              {Object.entries(supplier.checks).map(([key, value]) => {
+                const tone = value.includes("✗")
+                  ? "border-risk-bg bg-risk-bg text-risk"
+                  : value.includes("⚠")
+                    ? "border-warn-bg bg-warn-bg text-warn"
+                    : value.includes("✓")
+                      ? "border-ok-bg bg-ok-bg text-ok"
+                      : "border-border bg-white text-ink";
+                return (
+                  <div
+                    key={key}
+                    className={`mb-1.5 rounded-[6px] border px-3 py-2 ${tone}`}
+                  >
+                    {value}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

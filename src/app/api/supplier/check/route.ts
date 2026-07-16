@@ -131,10 +131,90 @@ export async function POST(req: NextRequest) {
     checks.okved = `ОКВЭД ${okved}`;
   }
 
-  // Заглушки для фазы 2
-  checks.rnp = "РНП ФАС — не проверялось (фаза 2)";
-  checks.fssp = "ФССП — не проверялось (фаза 2)";
-  checks.court = "Арбитраж — не проверялось (фаза 2)";
+  // 1. Смена руководителя. DaData обычно не отдаёт дату назначения руководителя,
+  // поэтому пробуем найти дату; если её нет — используем возраст компании как прокси.
+  const mgmt = party.management;
+  if (mgmt?.name) {
+    const mgmtDateRaw: string | null =
+      mgmt.start_date ?? mgmt.date ?? mgmt.registration_date ?? null;
+    const refDate = mgmtDateRaw ?? regDate ?? null;
+    let recent = false;
+    if (refDate) {
+      const months =
+        (Date.now() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24 * 30);
+      recent = months < 12;
+    }
+    if (recent) {
+      score -= 10;
+      checks.management = `Смена руководителя < 1 года ⚠ (${mgmt.name})`;
+    } else {
+      checks.management = `Руководитель стабильный ✓ (${mgmt.post ?? "рук."}: ${mgmt.name})`;
+    }
+  } else {
+    checks.management = "Руководитель — данные недоступны";
+  }
+
+  // 2. Арбитражные дела через открытый поиск kad.arbitr.ru (официального API нет,
+  // сайт защищён WAF — при блокировке помечаем как «не проверялось»). Таймаут 5 сек.
+  let arbitrCount: number | null = null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const kadRes = await fetch("https://kad.arbitr.ru/Kad/SearchInstances", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/javascript, */*; q=0.01",
+          "X-Requested-With": "XMLHttpRequest",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          Referer: "https://kad.arbitr.ru/",
+        },
+        body: JSON.stringify({
+          Page: 1,
+          Count: 10,
+          Courts: [],
+          Sides: [{ Name: "", Inn: inn, Type: 1 }],
+          DateFrom: null,
+          DateTo: null,
+          SessionFrom: null,
+          SessionTo: null,
+          CaseType: 0,
+          WithVKSInstances: false,
+        }),
+      });
+      if (kadRes.ok) {
+        const kadData = await kadRes.json();
+        arbitrCount = kadData?.Result?.TotalCount ?? kadData?.Result?.Items?.length ?? 0;
+        if ((arbitrCount ?? 0) > 0) {
+          score -= 15;
+          checks.arbitr = `Найдено ${arbitrCount} арбитражных дел ⚠`;
+        } else {
+          score += 10;
+          checks.arbitr = "Арбитражных дел не найдено ✓";
+        }
+      } else {
+        checks.arbitr = "Арбитраж — не проверялось";
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    checks.arbitr = "Арбитраж — не проверялось";
+  }
+
+  // 3. Выручка из финансовых данных DaData (отдаются не всегда).
+  const fin = party.finance;
+  const revenue: number | null = fin?.revenue ?? fin?.income ?? null;
+  const revenueYear: number | null = fin?.year ?? null;
+  if (revenue != null && revenue > 0) {
+    score += 5;
+    checks.finance = `Выручка ${revenueYear ?? "—"}: ${revenue.toLocaleString("ru-RU")} ₽`;
+  } else {
+    checks.finance = "Финансы — данные недоступны";
+  }
 
   score = Math.max(0, Math.min(100, score));
 
@@ -162,5 +242,11 @@ export async function POST(req: NextRequest) {
     await supabase.from("suppliers").upsert(supplierRow, { onConflict: "inn" });
   }
 
-  return NextResponse.json({ ...supplierRow, verdict: verdictFor(score) });
+  return NextResponse.json({
+    ...supplierRow,
+    verdict: verdictFor(score),
+    arbitr_count: arbitrCount,
+    revenue,
+    revenue_year: revenueYear,
+  });
 }
