@@ -16,6 +16,7 @@ import {
 import {
   getEntities,
   getQuoteWithItems,
+  saveProducts,
   saveQuote,
 } from "@/lib/store";
 import type { Entity, Quote, QuoteItem, RowState } from "@/lib/types";
@@ -87,6 +88,42 @@ function CalcScreen() {
       .catch((e) => toast(e instanceof Error ? e.message : "Ошибка загрузки", "error"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadId]);
+
+  // Позиции, добавленные из «Базы товаров» (через localStorage), — вставляем строками.
+  useEffect(() => {
+    const raw = localStorage.getItem("pendingProduct");
+    if (!raw) return;
+    localStorage.removeItem("pendingProduct");
+    try {
+      const pending = JSON.parse(raw) as Array<{
+        name?: string;
+        unit?: string;
+        zakup?: number;
+        supplier_name?: string;
+        supplier_inn?: string;
+      }>;
+      if (!pending.length) return;
+      setRows((prev) => [
+        ...prev,
+        ...pending.map((p) => ({
+          id: newId(),
+          name: p.name ?? "",
+          category: "",
+          unit: p.unit || "шт",
+          qty: "1",
+          zakup: String(p.zakup ?? 0),
+          dostavka: "0",
+          markup: String(defaultMarkup(num("1.30"))),
+          supplier_name: p.supplier_name ?? "",
+          supplier_inn: p.supplier_inn ?? "",
+        })),
+      ]);
+      toast(`Добавлено из базы: ${pending.length}`);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function applyQuote(quote: Quote, items: QuoteItem[]) {
     setQuoteId(quote.id);
@@ -267,6 +304,42 @@ function CalcScreen() {
 
   const checkedSuppliers = rows.filter((r) => r.supplier_name).length;
 
+  const productItems = () =>
+    rows
+      .filter((r) => r.name.trim())
+      .map((r) => ({
+        name: r.name.trim(),
+        unit: r.unit,
+        default_zakup: num(r.zakup),
+        supplier_name: r.supplier_name,
+        supplier_inn: r.supplier_inn,
+      }));
+
+  // Автосохранение текущих позиций в localStorage — чтобы «База товаров»
+  // могла сохранить их без доступа к state этого экрана.
+  useEffect(() => {
+    try {
+      localStorage.setItem("currentCalcItems", JSON.stringify(productItems()));
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  async function onSaveToProducts() {
+    const items = productItems();
+    if (items.length === 0) {
+      toast("Нет позиций с наименованием", "error");
+      return;
+    }
+    try {
+      const { saved } = await saveProducts(items);
+      toast(saved > 0 ? `Сохранено ${saved} позиций` : "Все позиции уже в базе");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Ошибка сохранения", "error");
+    }
+  }
+
   function onPdf() {
     if (!quoteId) {
       toast("Сначала сохраните расчёт", "error");
@@ -310,18 +383,26 @@ function CalcScreen() {
     <div className="flex min-h-0 flex-1 bg-bg">
       {/* Left: table */}
       <div className="min-w-0 flex-1 overflow-auto p-[18px]">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div className="text-[13px] text-[#6F685D]">
             <b className="text-ink">{rows.length}</b> позиций · поставщик выбран{" "}
             <b className="text-ink">
               {checkedSuppliers}/{rows.length}
             </b>
           </div>
-          {kpNo || customer ? (
-            <div className="text-[12px] text-muted">
-              КП № {kpNo || "—"} · {customer || "без заказчика"}
-            </div>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {kpNo || customer ? (
+              <div className="text-[12px] text-muted">
+                КП № {kpNo || "—"} · {customer || "без заказчика"}
+              </div>
+            ) : null}
+            <button
+              onClick={onSaveToProducts}
+              className="rounded-[9px] border border-border bg-white px-3 py-1.5 text-[12px] font-semibold text-[#6F685D] transition-colors hover:bg-[#FBFAF7]"
+            >
+              Сохранить в базу товаров
+            </button>
+          </div>
         </div>
 
         <QuoteTable

@@ -69,3 +69,15 @@ export interface RowState {
   supplier_name: string;
   supplier_inn: string;
 }
+
+// База товаров
+export interface Product {
+  id?: string;
+  created_at?: string;
+  name: string;
+  unit: string;
+  default_zakup: number;
+  supplier_name: string;
+  supplier_inn: string;
+  uses_count: number;
+}
