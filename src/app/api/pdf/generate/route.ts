@@ -80,6 +80,19 @@ export async function POST(req: NextRequest) {
   const pdfBuffers: { kind: string; buffer: Buffer; filename: string }[] = [];
   const browser = await launchBrowser();
 
+  // Части имени файла (общие для всех трёх вариантов).
+  const cleanCustomer = (quote.customer ?? "Заказчик")
+    .replace(/[^а-яёА-ЯЁa-zA-Z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .slice(0, 30);
+  const kpNum = (quote.kp_no ?? "бн").replace(/[^а-яёА-ЯЁa-zA-Z0-9\-_]/g, "_");
+  const entityShort: Record<string, string> = {
+    ip: "ИП_Зиянгиров",
+    tehnoprodukt: "Технопродукт",
+    ata: "АТА",
+  };
+
   try {
     for (const v of variants) {
       const entity = entitiesMap[v.entityCode];
@@ -91,8 +104,9 @@ export async function POST(req: NextRequest) {
         // so a differently-shaped payload still renders a title.
         name: i.name ?? i.наименование ?? i.product_name ?? i.title ?? "",
         unit: i.unit ?? "шт",
-        qty: Number(i.qty ?? 1),
-        price: Number(i[v.priceField] ?? 0),
+        // Округляем до 2 знаков, чтобы копейки сходились без плавающей ошибки.
+        qty: Math.round(Number(i.qty ?? 1) * 100) / 100,
+        price: Math.round(Number(i[v.priceField] ?? 0) * 100) / 100,
       }));
 
       const kpData: KpData = {
@@ -126,7 +140,9 @@ export async function POST(req: NextRequest) {
       });
       await page.close();
 
-      const filename = `КП_${quote.kp_no ?? "б-н"}_${v.kind}.pdf`;
+      const filename = `КП_${kpNum}_${cleanCustomer}_${
+        entityShort[v.entityCode] ?? v.entityCode
+      }.pdf`;
       pdfBuffers.push({ kind: v.kind, buffer: Buffer.from(pdfBuf), filename });
 
       // Persist to Storage — best-effort, never blocks PDF delivery.

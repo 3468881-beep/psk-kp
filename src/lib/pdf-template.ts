@@ -48,7 +48,8 @@ function esc(v: unknown): string {
 function buildTable(items: KpData["items"]): string {
   const rows = items
     .map((item) => {
-      const summa = (item.price ?? 0) * (item.qty ?? 1);
+      const summa =
+        Math.round((item.price ?? 0) * (item.qty ?? 1) * 100) / 100;
       return `<tr>
       <td>${item.position}</td>
       <td>${esc(item.name)}</td>
@@ -77,7 +78,13 @@ function buildTable(items: KpData["items"]): string {
 const VAT_RATE = 22;
 
 function totalAndVat(items: KpData["items"], taxMode: string) {
-  const total = items.reduce((s, i) => s + (i.price ?? 0) * (i.qty ?? 1), 0);
+  // Итого — сумма уже округлённых сумм строк (без накопления плавающей ошибки).
+  const total = items.reduce(
+    (s, i) =>
+      Math.round((s + Math.round((i.price ?? 0) * (i.qty ?? 1) * 100) / 100) * 100) /
+      100,
+    0,
+  );
   const vatLine =
     taxMode === "osn"
       ? `В т.ч. НДС ${VAT_RATE}%: ${fmt((total * VAT_RATE) / (100 + VAT_RATE))} ₽`
