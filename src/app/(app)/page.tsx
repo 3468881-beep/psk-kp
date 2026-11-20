@@ -70,6 +70,8 @@ function CalcScreen() {
   const [saving, setSaving] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
 
+  const DRAFT_KEY = "psk-kp-calc-draft";
+
   // Load юрлица once.
   useEffect(() => {
     getEntities()
@@ -119,6 +121,46 @@ function CalcScreen() {
         })),
       ]);
       toast(`Добавлено из базы: ${pending.length}`);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Восстановить незавершённый черновик после обрыва сети / перезагрузки.
+  useEffect(() => {
+    if (loadId) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        rows?: RowState[];
+        quoteId?: string;
+        customer?: string;
+        kpNo?: string;
+        kpDate?: string;
+        ts?: number;
+      };
+      if (!draft.rows?.length) return;
+      const ageMin = draft.ts ? (Date.now() - draft.ts) / 60000 : 999;
+      if (ageMin > 48 * 60) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      if (
+        confirm(
+          `Найден черновик КП (${draft.rows.length} поз., ${Math.round(ageMin)} мин назад). Восстановить?`,
+        )
+      ) {
+        setRows(draft.rows);
+        if (draft.quoteId) setQuoteId(draft.quoteId);
+        if (draft.customer != null) setCustomer(draft.customer);
+        if (draft.kpNo != null) setKpNo(draft.kpNo);
+        if (draft.kpDate) setKpDate(draft.kpDate);
+        toast("Черновик восстановлен");
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
     } catch {
       /* ignore */
     }
@@ -235,6 +277,11 @@ function CalcScreen() {
     setOptPechat(false);
     setOptPodpis(false);
     setOptLogo(false);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
     toast("Новый расчёт");
   }
 
@@ -287,13 +334,48 @@ function CalcScreen() {
       avg_markup: totals.avgMarkup,
     };
 
-    const res = await saveQuote(quote, items);
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ rows, quoteId, customer, kpNo, kpDate, ts: Date.now() }),
+      );
+    } catch {
+      /* ignore */
+    }
+
+    let res: { id: string; error: string | null };
+    try {
+      res = await Promise.race([
+        saveQuote(quote, items),
+        new Promise<{ id: string; error: string }>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                id: "",
+                error:
+                  "Таймаут сохранения (сеть/Supabase). Список на экране не пропал — нажмите «Сохранить» ещё раз.",
+              }),
+            45000,
+          ),
+        ),
+      ]);
+    } catch (e) {
+      res = {
+        id: "",
+        error: e instanceof Error ? e.message : "Сбой сети при сохранении",
+      };
+    }
     setSaving(false);
     if (res.error) {
       toast(`Ошибка сохранения: ${res.error}`, "error");
       return;
     }
     setQuoteId(res.id);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
     toast("Расчёт сохранён");
   }
 
@@ -315,16 +397,28 @@ function CalcScreen() {
         supplier_inn: r.supplier_inn,
       }));
 
-  // Автосохранение текущих позиций в localStorage — чтобы «База товаров»
-  // могла сохранить их без доступа к state этого экрана.
+  // Автосохранение в localStorage: база товаров + черновик на случай зависания сети.
   useEffect(() => {
     try {
       localStorage.setItem("currentCalcItems", JSON.stringify(productItems()));
+      if (rows.some((r) => r.name.trim())) {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            rows,
+            quoteId,
+            customer,
+            kpNo,
+            kpDate,
+            ts: Date.now(),
+          }),
+        );
+      }
     } catch {
-      /* ignore */
+      /* ignore quota / private mode */
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows]);
+  }, [rows, quoteId, customer, kpNo, kpDate]);
 
   async function onSaveToProducts() {
     const items = productItems();
