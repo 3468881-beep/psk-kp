@@ -105,8 +105,19 @@ export async function saveQuote(
       if (error) return { id: "", error: error.message };
     }
 
-    // Replace all items.
-    await supabase.from("quote_items").delete().eq("quote_id", quoteId);
+    // Atomically-ish replace items: keep a snapshot so a failed insert can roll back.
+    const { data: previousItems, error: prevErr } = await supabase
+      .from("quote_items")
+      .select("*")
+      .eq("quote_id", quoteId);
+    if (prevErr) return { id: quoteId!, error: prevErr.message };
+
+    const { error: delErr } = await supabase
+      .from("quote_items")
+      .delete()
+      .eq("quote_id", quoteId);
+    if (delErr) return { id: quoteId!, error: delErr.message };
+
     const rows = items.map((it) => {
       const { id: _dropId, quote_id: _dropQ, ...rest } = it;
       void _dropId;
@@ -115,9 +126,25 @@ export async function saveQuote(
     });
     if (rows.length) {
       const { error } = await supabase.from("quote_items").insert(rows);
-      if (error) return { id: quoteId!, error: error.message };
+      if (error) {
+        // Restore previous lines so the office does not lose the list.
+        if (previousItems && previousItems.length) {
+          const rollback = previousItems.map((it) => {
+            const row = { ...(it as Record<string, unknown>) };
+            delete row.id;
+            return row;
+          });
+          await supabase.from("quote_items").insert(rollback);
+        }
+        return {
+          id: quoteId!,
+          error: error.message + " (позиции восстановлены из предыдущей версии)",
+        };
+      }
     }
     return { id: quoteId!, error: null };
+  }
+
   }
 
   // ----- Demo -----
