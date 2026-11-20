@@ -145,8 +145,6 @@ export async function saveQuote(
     return { id: quoteId!, error: null };
   }
 
-  }
-
   // ----- Demo -----
   const db = readDemo();
   const id = quote.id ?? uuid();
